@@ -1,0 +1,44 @@
+Dataset: 02-00001_10min
+============================================================
+
+Rows: 144
+Columns: 26
+
+Start Time: 2010-12-02 00:00:00
+End Time: 2010-12-02 23:50:00
+
+Data Quality Summary
+--------------------
+Missing Values: 0
+Total Cells: 3744
+Data Availability: 100.00%
+Duplicate Timestamps: 0
+
+Missing Values By Column
+------------------------
+Timestamp (UTC+05:30): 0
+Spd 80m SE [m/s]: 0
+Spd 80m SE SD [m/s]: 0
+Spd 80m SE Gust [m/s]: 0
+Spd 80m NW [m/s]: 0
+Spd 80m NW SD [m/s]: 0
+Spd 80m NW Gust [m/s]: 0
+Spd 65m SE [m/s]: 0
+Spd 65m SE SD [m/s]: 0
+Spd 65m SE Gust [m/s]: 0
+Spd 50m SE [m/s]: 0
+Spd 50m SE SD [m/s]: 0
+Spd 50m SE Gust [m/s]: 0
+Spd 33.5m SE [m/s]: 0
+Spd 33.5m SE SD [m/s]: 0
+Spd 33.5m SE Gust [m/s]: 0
+Dir 78m SE [°]: 0
+Dir 48m SE [°]: 0
+Dir 48m SE SD [°]: 0
+Tmp 5m [°C]: 0
+Tmp 2m [°C]: 0
+BattV A [V]: 0
+BattV B [V]: 0
+BattV C [V]: 0
+A9-Setra 276 Avg [mbar]: 0
+A10-Humidity Avg [%]: 0
