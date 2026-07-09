@@ -1,91 +1,93 @@
 <div align="center">
-  <img src="https://img.shields.io/badge/Python-3.9+-blue.svg" alt="Python Version">
-  <img src="https://img.shields.io/badge/Data_Engineering-Wind_Data_Pipeline-orange.svg" alt="Data Engineering">
-  <img src="https://img.shields.io/badge/Reporting-Automated_PDF-red.svg" alt="PDF Reports">
-  
+  <img src="https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python Version">
+  <img src="https://img.shields.io/badge/Data_Engineering-Wind_Data_Pipeline-F7931E?style=for-the-badge&logo=apacheairflow&logoColor=white" alt="Data Engineering">
+  <img src="https://img.shields.io/badge/Reporting-Automated_PDF-E34F26?style=for-the-badge&logo=adobeacrobatreader&logoColor=white" alt="PDF Reports">
+  <img src="https://img.shields.io/badge/Status-Active-4CAF50?style=for-the-badge" alt="Status Active">
+
+  <br><br>
   <h1>🌪️ NIWE Parsers</h1>
-  <p><b>Advanced Data Parsing, Visualization, and Reporting for Wind Meteorological Loggers</b></p>
+  <p><b>An advanced, production-grade meteorological data pipeline for parsing, reverse-engineering, visualizing, and reporting on industry-standard Wind Data Loggers.</b></p>
+  <br>
 </div>
 
 ---
 
 ## 📖 Overview
 
-**NIWE Parsers** is a state-of-the-art automated software pipeline designed to decode, analyze, and visualize raw meteorological data from industry-standard **Wind Data Loggers**. The system handles full end-to-end processing: from reverse-engineering binary payloads and parsing raw formats, to generating interactive wind visualizations (wind roses, wind shear profiles, cross-correlations) and publishing comprehensive quality reports in PDF format.
+**NIWE Parsers** is a highly specialized data engineering framework built to extract maximum value from raw meteorological loggers used in the wind energy sector. 
 
-### ✨ Key Features
-- **Universal Wind Data Decoding**: Automatically sniff and decode complex, proprietary binary formats and raw text files from anemometers, vanes, and environmental sensors.
-- **Intelligent Wind Visualizations**: Generate high-quality statistical plots including Wind Roses, Correlation Heatmaps, and Wind Shear profiles.
-- **Automated PDF Reporting**: Compile data quality summaries, sensor statistics, and visualizations into professional, client-ready PDF reports.
-- **Batch Processing**: Scalable CLI tools to decode and process entire directories of logger outputs in one seamless operation.
+Whether you are dealing with proprietary, undocumented binary files (`.ndf`), raw text dumps (`.txt`), or encrypted engineering outputs (`.wnd`), this pipeline provides a robust, end-to-end mechanism to reverse-engineer, parse, standardize, and visualize the data into client-ready PDF reports.
+
+> **💡 Note:** This project was developed strictly for advanced wind resource assessment, anomalous sensor detection, and air-density-adjusted power density calculations.
+
+## ✨ Key Features & Capabilities
+
+* 🔓 **Universal Binary Reverse-Engineering:** Equipped with a format-agnostic `binary_scanner.py` that computes column-wise variability and byte-frequency to crack unknown logger firmware formats.
+* 📐 **Windographer Emulation:** Faithfully resamples native intervals, shifts timestamps (interval-start indexing), and handles gap-filling (inserting blank rows) to perfectly mimic standard Windographer exports.
+* 🧮 **Advanced Meteorological Math:** Automatically computes Ideal Gas Air Density ($\\rho$), Wind Power Density (WPD), Turbulence Intensity (TI30), and Wind Shear ($\\alpha$).
+* 📈 **Automated Visual Analytics:** Dynamically generates publication-ready Wind Roses, vertical Wind Shear profiles, and Pearson correlation matrices to detect iced or failing anemometers.
+
+---
 
 ## 🏗️ Architecture: The 4 Core Parsers
 
-The project is modularized into four dedicated parsers and processors, tailored to specific hardware manufacturers. Below is a deep-dive into how every module operates internally.
+The system is decoupled into four highly specialized hardware parsers. Below is a deep-dive into the precise internal mechanics of each module:
 
-### 1. Ammonit (`ammonit/`)
-**Purpose:** Parsing pipelines for Ammonit meteorological masts.
-* **How it works:** 
-  * The `batch_decode.py` script automatically discovers raw files and pushes them through a standard parsing pipeline (`parse_logger_file`).
-  * It detects channels using exact string matching (e.g., looking for "speed", "dir", "temperature", "battery" combined with metric units).
-  * **Wind Shear ($\alpha$) Extraction:** It looks for specific height markers in the headers (e.g., `100`, `80`, `50`, `10`), aggregates the mean wind speeds at these heights, and automatically computes the wind shear exponent using the top two highest available anemometers.
-  * It generates text-based statistical quality reports (`summary.txt`, `quality_report.txt`, `statistics_report.txt`) before rendering the final PDF.
+### 1️⃣ Ammonit (`ammonit/`)
+Designed for **Ammonit** meteorological masts, focusing on extracting heavily nested CSV/TXT files.
+* **Intelligent Sniffing:** Automatically identifies channels by scanning for regex patterns (e.g., matching `Speed` + `m/s` or `Direction` + `deg`).
+* **Vertical Shear Extraction:** It parses sensor heights directly from the column headers (e.g., `WindSpeed_100m`) and dynamically aggregates the mean wind speeds to calculate the Wind Shear Exponent ($\\alpha$) using the highest available sensors.
+* **Automated QA:** Outputs raw text-based statistical quality summaries before rendering the final visual PDF.
 
-### 2. Kintech (`kintech/`)
-**Purpose:** Dedicated parsers for Kintech engineering systems (Atlas Output Data Files).
-* **How it works:** 
-  * The `kintech_parser.py` acts as the entry point, reading raw `.wnd` files.
-  * It provides powerful temporal transformations via `RecordTransformer` (located in `core/transform.py`). 
-  * **Windographer Emulation:** By passing `--format windographer`, the parser will automatically resample the native interval (e.g., 5-minute data) to a 10-minute grid, compute derived statistics (Gust, Turbulence Intensity, Air Density), and shift timestamps to match Windographer conventions (interval-start indexing).
-  * It handles gap-filling (inserting blank rows for missing timestamps) seamlessly.
+### 2️⃣ Kintech (`kintech/`)
+A dedicated parser for **Kintech Atlas** Output Data Files (`.wnd`), powered by a highly sophisticated temporal engine.
+* **Temporal Transformation (`core/transform.py`):** Provides a strict grid resampling engine. It can take native 5-minute data and resample it to a strict 10-minute grid, filling missing timestamps with blanks to preserve temporal alignment.
+* **Derived Statistics:** Computes Gust, Turbulence Intensity (TI30), and accurately propagates primary/secondary TI columns across redundant sensors.
+* **Engineering Precision:** Implements strict round-half-up (ties away from zero) to perfectly match exact engineering specifications and correct floating-point boundaries.
 
-### 3. Nomad (`nomad/`)
-**Purpose:** Universal decoder focusing on complex binary structure decoding for Nomad 2 / Nomad 3 loggers.
-* **How it works:** 
-  * This is a complete reverse-engineering of the proprietary `.ndf` binary format.
-  * `decoders/nomad_ndf.py` reads the binary byte-by-byte:
-    * **Preamble (0x0000):** Extracts logger serial, site name, and elevation.
-    * **Channel Table (0x0040):** Extracts calibration slopes, offsets, sensor heights, and models (e.g., "SWI C3").
-    * **Dense Data (0x0908):** Reads 16-byte raw float values mapped to exact sensor slots.
-  * **Fingerprinting:** Because sensor slots change based on firmware deployment, the decoder builds a *fingerprint* of the channel layout (e.g., `SOMAGUDDA_460_LAYOUT` vs `ROJMAL_2_LAYOUT`) to ensure the 53 available binary slots map perfectly to the correct metric (Avg, SD, Gust, TimeOfMax).
+### 3️⃣ Nomad (`nomad/`)
+The **Universal Decoder** built specifically to reverse-engineer complex, undocumented Nomad 2 / Nomad 3 binary (`.ndf`) structures.
+* **Phase-1 Binary Scanning:** Utilizes `analysis/binary_scanner.py` to run hex-dumps, find printable ASCII runs, and compute stride-histograms to deduce hidden fixed-size record layouts.
+* **Byte-Level Parsing:** Directly reads the binary Preamble (`0x0000`), extracts calibration slopes & offsets from the Channel Table (`0x0040`), and unpacks the dense 16-byte live float values at `0x0908`.
+* **Deployment Fingerprinting:** Because firmware updates alter the slot layout, the decoder builds a *structural fingerprint* (e.g., `SOMAGUDDA_460_LAYOUT`) to ensure the 53 available binary slots map perfectly to the right physical metric (Avg, SD, Gust).
 
-### 4. RWD Automation (`RWD_Automation/`)
-**Purpose:** Automation pipeline for continuous Raw Wind Data (RWD) processing, specifically for NRG Systems loggers.
-* **How it works:** 
-  * The `batch_decode.py` script orchestrates a complex cross-platform conversion. It uses `wine` (on macOS) to silently run the proprietary Windows-only `SDR.exe` utility, converting `.RWD` binaries into raw tab-delimited text files.
-  * **Dynamic Header Resolution:** It parses the metadata header of the generated SDR txt files to extract the Channel number, Description, Serial Number, and Height. 
-  * It maps generic columns like `CH1Avg` to highly descriptive names like `WindSpeed_100m_SN1933_Avg`. It also handles duplicate resolving automatically.
-  * Finally, it feeds this cleaned DataFrame into the centralized Visualization and PDF reporting engines.
+### 4️⃣ RWD Automation (`RWD_Automation/`)
+An automation pipeline for continuous Raw Wind Data (RWD) processing from **NRG Systems** loggers.
+* **Cross-Platform Execution:** Orchestrates a seamless background `wine` wrapper on macOS to run the proprietary, Windows-only `SDR.exe` utility, converting `.RWD` binaries into raw tab-delimited text files.
+* **Metadata Resolution:** Scans the generated SDR text header to extract the Channel number, Description, Serial Number, and Height. 
+* **Header Normalization:** Dynamically maps generic columns (like `CH1Avg`) to highly descriptive, serialized names (like `WindSpeed_100m_SN1933_Avg`), resolving duplicates automatically before handing the DataFrame to the visualization engine.
 
-## ⚙️ Visualizations & The Wind Data Engine
+---
 
-Once data is extracted and normalized by any of the 4 parsers above, it is passed into `visualize_outputs.py`. The core engine relies on intelligent column detection and specialized wind data mathematics:
+## 🧮 The Wind Data Engine: Mathematics & Visualization
 
-1. **Intelligent Channel Detection**: 
-   The system parses the raw data headers using smart Regular Expressions (Regex) to dynamically identify wind channels regardless of the logger's naming convention.
-   ```python
-   REGEX_WS = re.compile(r"Spd|Wind Speed|WS|Anemometer|WindSpeed", re.IGNORECASE)
-   REGEX_WD = re.compile(r"Dir|Direction|WD|WindDirection|Vane", re.IGNORECASE)
-   ```
+Once data is extracted and normalized by the parsers, it enters `visualize_outputs.py`. This engine applies rigorous meteorological mathematics to generate reports:
 
-2. **Wind Shear Calculation ($\\alpha$)**:
-   The engine automatically extracts height metadata from column names (e.g., `WindSpeed_100m_SN1933_Avg` -> `100m`) and computes the **Wind Shear Exponent ($\\alpha$)** using the Power Law profile. It utilizes the highest ($H_2$) and lowest ($H_1$) anemometer readings ($V_2, V_1$):
-   $$ \\alpha = \\frac{\\ln(V_2 / V_1)}{\\ln(H_2 / H_1)} $$
-   This mathematically determines the vertical wind speed gradient.
+### 💨 Wind Shear ($\\alpha$) & Power Law
+The engine extracts height metadata and computes the **Wind Shear Exponent ($\\alpha$)** using the Power Law profile. It utilizes the highest ($H_2$) and lowest ($H_1$) anemometers ($V_2, V_1$):
+$$ \\alpha = \\frac{\\ln(V_2 / V_1)}{\\ln(H_2 / H_1)} $$
+*Plotted as a vertical gradient profile to visualize boundary layer shear.*
 
-3. **Wind Rose Generation**:
-   By coupling the detected Wind Speed (`ws_col`) and Wind Direction (`wd_col`) channels, the engine groups the data into directional sectors and speed bins. The valid intersections are mapped onto a polar coordinate system using `WindroseAxes` to generate a beautiful directional frequency distribution.
+### ⚡ Air Density & Wind Power Density (WPD)
+If a barometric pressure channel is available, the engine applies the Ideal Gas Law to compute Air Density ($\\rho$), assuming standard dry-air constants ($R_{spec} \\approx 287.05 \\text{ J}/(\\text{kg}\\cdot\\text{K})$):
+$$ \\rho = \\frac{P_{Pa}}{82791.0} $$
+This $\\rho$ is then used to compute the highly precise **Wind Power Density** ($0.5 \\cdot \\rho \\cdot V^3$) at 5 significant figures.
 
-4. **Anomaly Detection via Correlation**:
-   The `plot_correlation_heatmap` function computes the Pearson correlation matrix across all numeric wind data columns. This highlights inconsistencies, such as iced anemometers (where correlation drops between redundant sensors at the same height).
+### 🧭 Wind Rose Generation
+By coupling Wind Speed and Wind Direction channels, the engine maps valid intersections onto a polar coordinate system using `WindroseAxes`. This generates a stunning directional frequency distribution, critical for micro-siting wind turbines.
 
-### Pipeline Workflow
+### 🌡️ Anomaly Detection (Pearson Correlation)
+A full cross-sensor Pearson correlation matrix is rendered as a Seaborn Heatmap. This instantly highlights sensor drift or severe icing events (e.g., when the correlation between two redundant 100m anemometers drops significantly below `0.99`).
+
+---
+
+## 🛤️ Data Flow Architecture
 
 ```mermaid
 graph LR
     A[(Raw Wind Data<br>RWD/NDF/WND)] --> B(Parser Engine)
     
-    subgraph 4 Core Parsers
+    subgraph 4 Core Hardware Parsers
         B1(Ammonit CSV/TXT)
         B2(Kintech Atlas Parser)
         B3(Nomad Binary Decoder)
@@ -93,7 +95,7 @@ graph LR
     end
     
     B --> B1 & B2 & B3 & B4
-    B1 & B2 & B3 & B4 --> C{Normalized Data<br>.xlsx / .csv}
+    B1 & B2 & B3 & B4 --> C{Normalized Data<br>pandas.DataFrame}
     C -->|Regex Channel Detection| D[Visualization Engine]
     C --> E[Statistical Analysis]
     D -->|Wind Roses & Shear| F((PDF Report Gen))
@@ -106,51 +108,42 @@ graph LR
     style F fill:#d63031,stroke:#ff7675,stroke-width:2px,color:#fff
 ```
 
+---
+
 ## 🚀 Quick Start
 
-### 1. Installation
+### 1. Requirements
+Ensure you have **Python 3.9+** installed. The environment requires standard data science libraries (`pandas`, `matplotlib`, `seaborn`, `windrose`, `fpdf2`, `openpyxl`). 
 
-Ensure you have Python 3.9+ installed. The environment requires standard data processing and plotting libraries (`pandas`, `matplotlib`, `seaborn`, `windrose`, `fpdf2`, `openpyxl`). RWD_Automation requires `wine` installed on macOS.
+> 🍎 **macOS Users:** The `RWD_Automation` module requires `wine-stable` to execute the Windows `SDR.exe` backend.
 
-### 2. Processing Data
+### 2. Execution
 
-Each parser module comes with a unified `main.py` CLI entry point (or `batch_decode.py`) for orchestration.
+Each module contains a unified `main.py` CLI orchestration script.
 
-**Example: Processing Kintech Wind Data**
+**Example: Kintech Pipeline**
 ```bash
 cd kintech
 
 # Run the full pipeline (Decode -> Visualize -> Report)
 python3 main.py
 
-# Only generate visualizations (skip decoding)
+# Skip decoding, visualize only from existing outputs
 python3 main.py --visualize-only
 ```
 
-**Example: Decoding Nomad Binary Wind Data**
+**Example: Nomad Binary Reverse-Engineering**
 ```bash
 cd nomad
+
+# Phase-1: Run a structural scan to map out binary bytes
+python3 main.py input/01-00001.NDF --analyze-only
 
 # Auto-detect binary format and export to Excel workbook
 python3 main.py input/01-00001.NDF
 ```
 
-## 📂 Project Structure
-
-```text
-NIWE Parsers/
-├── ammonit/                  # Ammonit mast parsers & reporting
-│   └── batch_decode.py       # Regex channel detection & shear math
-├── kintech/                  # Kintech logger decoding pipeline
-│   ├── core/transform.py     # Time-series resampling & shifting
-│   └── main.py               # Kintech CLI orchestration
-├── nomad/                    # Nomad universal binary decoders
-│   └── decoders/nomad_ndf.py # Binary byte-extraction & fingerprinting
-└── RWD_Automation/           # Raw Wind Data automation scripts
-    └── batch_decode.py       # Wine execution & HDR parsing
-```
-
 ---
 <div align="center">
-  <p><i>Developed for advanced wind data analysis and meteorological reporting.</i></p>
+  <p><i>Engineered for the highest standard of meteorological data precision and reliability.</i></p>
 </div>
