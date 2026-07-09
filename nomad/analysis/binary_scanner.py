@@ -1,0 +1,106 @@
+from __future__ import annotations
+import re
+from collections import Counter
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import List, Optional, Sequence
+PRINTABLE_RANGE = (32, 126)
+
+@dataclass
+class PrintableRun:
+    offset: int
+    length: int
+    text: str
+
+    def __repr__(self) -> str:
+        return f'PrintableRun(offset=0x{self.offset:X}, length={self.length}, text={self.text!r})'
+
+@dataclass
+class ColumnReport:
+    stride: int
+    record_count: int
+    constant_columns: List[int] = field(default_factory=list)
+    varying_columns: List[int] = field(default_factory=list)
+    column_value_preview: dict = field(default_factory=dict)
+
+def hex_dump(data: bytes, offset: int=0, length: Optional[int]=None, width: int=16) -> str:
+    end = len(data) if length is None else min(len(data), offset + length)
+    lines = []
+    for i in range(offset, end, width):
+        chunk = data[i:i + width]
+        hex_part = ' '.join((f'{b:02x}' for b in chunk))
+        ascii_part = ''.join((chr(b) if PRINTABLE_RANGE[0] <= b <= PRINTABLE_RANGE[1] else '.' for b in chunk))
+        lines.append(f'{i:08x}  {hex_part:<{width * 3}}  {ascii_part}')
+    return '\n'.join(lines)
+
+def find_printable_strings(data: bytes, min_length: int=4) -> List[PrintableRun]:
+    pattern = re.compile(b'[\\x20-\\x7e]{%d,}' % min_length)
+    runs = []
+    for m in pattern.finditer(data):
+        runs.append(PrintableRun(offset=m.start(), length=len(m.group()), text=m.group().decode('ascii')))
+    return runs
+
+def find_repeating_byte_sequences(data: bytes, seq_len: int=2, top_n: int=20, region: Optional[slice]=None) -> List[tuple]:
+    chunk = data if region is None else data[region]
+    counts: Counter = Counter()
+    for i in range(0, len(chunk) - seq_len + 1):
+        counts[chunk[i:i + seq_len]] += 1
+    return counts.most_common(top_n)
+
+def find_tag_offsets(data: bytes, tag: bytes) -> List[int]:
+    offsets = []
+    start = 0
+    while True:
+        idx = data.find(tag, start)
+        if idx == -1:
+            break
+        offsets.append(idx)
+        start = idx + 1
+    return offsets
+
+def stride_histogram(offsets: Sequence[int], top_n: int=10) -> List[tuple]:
+    diffs = [offsets[i + 1] - offsets[i] for i in range(len(offsets) - 1)]
+    return Counter(diffs).most_common(top_n)
+
+def column_variability_scan(data: bytes, start: int, stride: int, count: int) -> ColumnReport:
+    records = [data[start + i * stride:start + i * stride + stride] for i in range(count)]
+    records = [r for r in records if len(r) == stride]
+    report = ColumnReport(stride=stride, record_count=len(records))
+    for col in range(stride):
+        values = sorted(set((r[col] for r in records)))
+        if len(values) == 1:
+            report.constant_columns.append(col)
+        else:
+            report.varying_columns.append(col)
+        report.column_value_preview[col] = values[:8]
+    return report
+
+def find_record_stride(data: bytes, tag: bytes, region: Optional[slice]=None) -> Optional[int]:
+    search_data = data if region is None else data[region]
+    base = 0 if region is None else region.start or 0
+    offsets = find_tag_offsets(search_data, tag)
+    if len(offsets) < 2:
+        return None
+    hist = stride_histogram(offsets, top_n=1)
+    return hist[0][0] if hist else None
+
+def generate_file_map(data: bytes, printable_min_length: int=4) -> str:
+    lines = [f'File size: {len(data)} bytes (0x{len(data):X})', '']
+    lines.append('=== Printable text runs (>= %d chars) ===' % printable_min_length)
+    runs = find_printable_strings(data, min_length=printable_min_length)
+    lines.append(f'Found {len(runs)} printable run(s).')
+    for r in runs[:200]:
+        lines.append(f'  0x{r.offset:06X}  len={r.length:<4d}  {r.text!r}')
+    if len(runs) > 200:
+        lines.append(f'  ... and {len(runs) - 200} more')
+    lines.append('')
+    lines.append('=== Most common 2-byte sequences (candidate tags) ===')
+    for seq, cnt in find_repeating_byte_sequences(data, seq_len=2, top_n=15):
+        lines.append(f'  {seq.hex()}  count={cnt}')
+    lines.append('')
+    return '\n'.join(lines)
+if __name__ == '__main__':
+    import sys
+    path = Path(sys.argv[1])
+    raw = path.read_bytes()
+    print(generate_file_map(raw))
