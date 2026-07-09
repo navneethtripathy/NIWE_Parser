@@ -5,35 +5,35 @@
   <img src="https://img.shields.io/badge/Status-Active-4CAF50?style=for-the-badge" alt="Status Active">
 
   <br><br>
-  <h1>🌪️ NIWE Parsers</h1>
+  <h1>NIWE Parsers</h1>
   <p><b>An advanced, production-grade meteorological data pipeline for parsing, reverse-engineering, visualizing, and reporting on industry-standard Wind Data Loggers.</b></p>
   <br>
 </div>
 
 ---
 
-## 📖 Overview
+## Overview
 
 **NIWE Parsers** is a highly specialized data engineering framework built to extract maximum value from raw meteorological loggers used in the wind energy sector. 
 
 Whether you are dealing with proprietary, undocumented binary files (`.ndf`), raw text dumps (`.txt`), or encrypted engineering outputs (`.wnd`), this pipeline provides a robust, end-to-end mechanism to reverse-engineer, parse, standardize, and visualize the data into client-ready PDF reports.
 
-> **💡 Note:** This project was developed strictly for advanced wind resource assessment, anomalous sensor detection, and air-density-adjusted power density calculations.
+> **Note:** This project was developed strictly for advanced wind resource assessment, anomalous sensor detection, and air-density-adjusted power density calculations.
 
-## ✨ Key Features & Capabilities
+## Key Features & Capabilities
 
-* 🔓 **Universal Binary Reverse-Engineering:** Equipped with a format-agnostic `binary_scanner.py` that computes column-wise variability and byte-frequency to crack unknown logger firmware formats.
-* 📐 **Windographer Emulation:** Faithfully resamples native intervals, shifts timestamps (interval-start indexing), and handles gap-filling (inserting blank rows) to perfectly mimic standard Windographer exports.
-* 🧮 **Advanced Meteorological Math:** Automatically computes Ideal Gas Air Density ($\\rho$), Wind Power Density (WPD), Turbulence Intensity (TI30), and Wind Shear ($\\alpha$).
-* 📈 **Automated Visual Analytics:** Dynamically generates publication-ready Wind Roses, vertical Wind Shear profiles, and Pearson correlation matrices to detect iced or failing anemometers.
+* **Universal Binary Reverse-Engineering:** Equipped with a format-agnostic `binary_scanner.py` that computes column-wise variability and byte-frequency to crack unknown logger firmware formats.
+* **Windographer Emulation:** Faithfully resamples native intervals, shifts timestamps (interval-start indexing), and handles gap-filling (inserting blank rows) to perfectly mimic standard Windographer exports.
+* **Advanced Meteorological Math:** Automatically computes Ideal Gas Air Density ($\\rho$), Wind Power Density (WPD), Turbulence Intensity (TI30), and Wind Shear ($\\alpha$).
+* **Automated Visual Analytics:** Dynamically generates publication-ready Wind Roses, vertical Wind Shear profiles, and Pearson correlation matrices to detect iced or failing anemometers.
 
 ---
 
-## 🏗️ Architecture: The 4 Core Parsers
+## Architecture: The 4 Core Parsers
 
 The system is decoupled into four highly specialized hardware parsers. Below is a deep-dive into the precise internal mechanics of each module:
 
-### 1️⃣ Ammonit (`ammonit/`)
+### 1. Ammonit (`ammonit/`)
 Designed for **Ammonit** meteorological masts, focusing on extracting heavily nested CSV/TXT files.
 
 **Working:**
@@ -45,7 +45,7 @@ Designed for **Ammonit** meteorological masts, focusing on extracting heavily ne
 * Python 3.9+ with `pandas`, `matplotlib`, `seaborn`, `windrose`, `fpdf2`, `openpyxl`.
 * Raw data files in `.csv` or `.txt` formats from Ammonit loggers.
 
-### 2️⃣ Kintech (`kintech/`)
+### 2. Kintech (`kintech/`)
 A dedicated parser for **Kintech Atlas** Output Data Files (`.wnd`), powered by a highly sophisticated temporal engine.
 
 **Working:**
@@ -57,7 +57,7 @@ A dedicated parser for **Kintech Atlas** Output Data Files (`.wnd`), powered by 
 * Python 3.9+ with `pandas`, `matplotlib`, `seaborn`, `windrose`, `fpdf2`, `openpyxl`.
 * Kintech Atlas Output Data Files (`.wnd`).
 
-### 3️⃣ Nomad (`nomad/`)
+### 3. Nomad (`nomad/`)
 The **Universal Decoder** built specifically to reverse-engineer complex, undocumented Nomad 2 / Nomad 3 binary (`.ndf`) structures.
 
 **Working:**
@@ -69,7 +69,7 @@ The **Universal Decoder** built specifically to reverse-engineer complex, undocu
 * Python 3.9+ with `pandas`, `matplotlib`, `seaborn`, `windrose`, `fpdf2`, `openpyxl`.
 * Nomad binary data files (`.ndf`).
 
-### 4️⃣ RWD Automation (`RWD_Automation/`)
+### 4. RWD Automation (`RWD_Automation/`)
 An automation pipeline for continuous Raw Wind Data (RWD) processing from **NRG Systems** loggers.
 
 **Working:**
@@ -86,29 +86,29 @@ An automation pipeline for continuous Raw Wind Data (RWD) processing from **NRG 
 
 ---
 
-## 🧮 The Wind Data Engine: Mathematics & Visualization
+## The Wind Data Engine: Mathematics & Visualization
 
 Once data is extracted and normalized by the parsers, it enters `visualize_outputs.py`. This engine applies rigorous meteorological mathematics to generate reports:
 
-### 💨 Wind Shear ($\\alpha$) & Power Law
+### Wind Shear ($\\alpha$) & Power Law
 The engine extracts height metadata and computes the **Wind Shear Exponent ($\\alpha$)** using the Power Law profile. It utilizes the highest ($H_2$) and lowest ($H_1$) anemometers ($V_2, V_1$):
 $$ \\alpha = \\frac{\\ln(V_2 / V_1)}{\\ln(H_2 / H_1)} $$
 *Plotted as a vertical gradient profile to visualize boundary layer shear.*
 
-### ⚡ Air Density & Wind Power Density (WPD)
+### Air Density & Wind Power Density (WPD)
 If a barometric pressure channel is available, the engine applies the Ideal Gas Law to compute Air Density ($\\rho$), assuming standard dry-air constants ($R_{spec} \\approx 287.05 \\text{ J}/(\\text{kg}\\cdot\\text{K})$):
 $$ \\rho = \\frac{P_{Pa}}{82791.0} $$
 This $\\rho$ is then used to compute the highly precise **Wind Power Density** ($0.5 \\cdot \\rho \\cdot V^3$) at 5 significant figures.
 
-### 🧭 Wind Rose Generation
+### Wind Rose Generation
 By coupling Wind Speed and Wind Direction channels, the engine maps valid intersections onto a polar coordinate system using `WindroseAxes`. This generates a stunning directional frequency distribution, critical for micro-siting wind turbines.
 
-### 🌡️ Anomaly Detection (Pearson Correlation)
+### Anomaly Detection (Pearson Correlation)
 A full cross-sensor Pearson correlation matrix is rendered as a Seaborn Heatmap. This instantly highlights sensor drift or severe icing events (e.g., when the correlation between two redundant 100m anemometers drops significantly below `0.99`).
 
 ---
 
-## 🛤️ Data Flow Architecture
+## Data Flow Architecture
 
 ```mermaid
 graph LR
@@ -137,12 +137,12 @@ graph LR
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. Requirements
 Ensure you have **Python 3.9+** installed. The environment requires standard data science libraries (`pandas`, `matplotlib`, `seaborn`, `windrose`, `fpdf2`, `openpyxl`). 
 
-> 🍎 **macOS Users:** The `RWD_Automation` module requires `wine-stable` to execute the Windows `SDR.exe` backend.
+> **macOS Users:** The `RWD_Automation` module requires `wine-stable` to execute the Windows `SDR.exe` backend.
 
 ### 2. Execution
 
