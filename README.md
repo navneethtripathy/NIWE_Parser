@@ -35,27 +35,54 @@ The system is decoupled into four highly specialized hardware parsers. Below is 
 
 ### 1️⃣ Ammonit (`ammonit/`)
 Designed for **Ammonit** meteorological masts, focusing on extracting heavily nested CSV/TXT files.
+
+**Working:**
 * **Intelligent Sniffing:** Automatically identifies channels by scanning for regex patterns (e.g., matching `Speed` + `m/s` or `Direction` + `deg`).
-* **Vertical Shear Extraction:** It parses sensor heights directly from the column headers (e.g., `WindSpeed_100m`) and dynamically aggregates the mean wind speeds to calculate the Wind Shear Exponent ($\\alpha$) using the highest available sensors.
+* **Vertical Shear Extraction:** It parses sensor heights directly from the column headers (e.g., `WindSpeed_100m`) and dynamically aggregates the mean wind speeds to calculate the Wind Shear Exponent ($\alpha$) using the highest available sensors.
 * **Automated QA:** Outputs raw text-based statistical quality summaries before rendering the final visual PDF.
+
+**Requirements:**
+* Python 3.9+ with `pandas`, `matplotlib`, `seaborn`, `windrose`, `fpdf2`, `openpyxl`.
+* Raw data files in `.csv` or `.txt` formats from Ammonit loggers.
 
 ### 2️⃣ Kintech (`kintech/`)
 A dedicated parser for **Kintech Atlas** Output Data Files (`.wnd`), powered by a highly sophisticated temporal engine.
+
+**Working:**
 * **Temporal Transformation (`core/transform.py`):** Provides a strict grid resampling engine. It can take native 5-minute data and resample it to a strict 10-minute grid, filling missing timestamps with blanks to preserve temporal alignment.
 * **Derived Statistics:** Computes Gust, Turbulence Intensity (TI30), and accurately propagates primary/secondary TI columns across redundant sensors.
 * **Engineering Precision:** Implements strict round-half-up (ties away from zero) to perfectly match exact engineering specifications and correct floating-point boundaries.
 
+**Requirements:**
+* Python 3.9+ with `pandas`, `matplotlib`, `seaborn`, `windrose`, `fpdf2`, `openpyxl`.
+* Kintech Atlas Output Data Files (`.wnd`).
+
 ### 3️⃣ Nomad (`nomad/`)
 The **Universal Decoder** built specifically to reverse-engineer complex, undocumented Nomad 2 / Nomad 3 binary (`.ndf`) structures.
+
+**Working:**
 * **Phase-1 Binary Scanning:** Utilizes `analysis/binary_scanner.py` to run hex-dumps, find printable ASCII runs, and compute stride-histograms to deduce hidden fixed-size record layouts.
 * **Byte-Level Parsing:** Directly reads the binary Preamble (`0x0000`), extracts calibration slopes & offsets from the Channel Table (`0x0040`), and unpacks the dense 16-byte live float values at `0x0908`.
 * **Deployment Fingerprinting:** Because firmware updates alter the slot layout, the decoder builds a *structural fingerprint* (e.g., `SOMAGUDDA_460_LAYOUT`) to ensure the 53 available binary slots map perfectly to the right physical metric (Avg, SD, Gust).
 
+**Requirements:**
+* Python 3.9+ with `pandas`, `matplotlib`, `seaborn`, `windrose`, `fpdf2`, `openpyxl`.
+* Nomad binary data files (`.ndf`).
+
 ### 4️⃣ RWD Automation (`RWD_Automation/`)
 An automation pipeline for continuous Raw Wind Data (RWD) processing from **NRG Systems** loggers.
+
+**Working:**
+* **Symphonie Data Retriever Integration:** Uses Symphonie Data Retriever to perform raw file conversion and database imports under automation. It supports importing, scaling, exporting, and generating reports (wind rose, frequency distribution, monthly graphs) for Symphonie, 9300, 9200-Plus, and Wind Explorer loggers, while applying custom data filters for icing or faulty sensors.
 * **Cross-Platform Execution:** Orchestrates a seamless background `wine` wrapper on macOS to run the proprietary, Windows-only `SDR.exe` utility, converting `.RWD` binaries into raw tab-delimited text files.
 * **Metadata Resolution:** Scans the generated SDR text header to extract the Channel number, Description, Serial Number, and Height. 
 * **Header Normalization:** Dynamically maps generic columns (like `CH1Avg`) to highly descriptive, serialized names (like `WindSpeed_100m_SN1933_Avg`), resolving duplicates automatically before handing the DataFrame to the visualization engine.
+
+**Requirements:**
+* Python 3.9+ with standard visualization libraries.
+* `wine-stable` installed (if running on macOS/Linux) to execute Windows software.
+* Symphonie Data Retriever Software installed (`SDR.exe` accessible).
+* Raw Wind Data files (`.RWD`).
 
 ---
 
